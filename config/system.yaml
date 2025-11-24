@@ -1,0 +1,8 @@
+system:
+  tick_ms: 1
+  max_tasks: 16
+
+events:
+  - timer
+  - button
+  - uart_rx

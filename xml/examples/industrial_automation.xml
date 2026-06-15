@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rule Engine Configuration — Industrial/Fire/Pump Automation Example
+  Demonstrates: multi-sensor rules, hysteresis, TOU schedules,
+                fire alarms, pump control, delays, priority arbitration
+-->
+<RuleEngineConfig version="1.0"
+                  description="Utkranti Yantra — Industrial Automation Demo">
+
+  <!-- ==================================================================
+       SENSORS
+       IDs: 1-19=Temperature  20-39=Humidity  40-49=Current
+            50-59=Voltage  60-69=Fire  70-79=Smoke
+            80-89=Ultrasonic  90-99=Digital
+       ================================================================== -->
+  <Sensors>
+
+    <!-- Temperature sensors -->
+    <Sensor id="1"  name="BoilerTemp"       type="TEMPERATURE"
+            unit="°C"   min="-10" max="200"
+            threshold_hi="50"  threshold_lo="10"
+            hysteresis="5"     sample_interval_ms="2000"
+            adc_channel="0"    scale_factor="20000"
+            interface="ADC"    enabled="true"/>
+
+    <Sensor id="2"  name="RoomTemp"         type="TEMPERATURE"
+            unit="°C"   min="-10" max="80"
+            threshold_hi="35"  threshold_lo="5"
+            hysteresis="2"     sample_interval_ms="5000"
+            i2c_address="0x48" interface="I2C"
+            enabled="true"/>
+
+    <Sensor id="3"  name="MotorWindingTemp" type="TEMPERATURE"
+            unit="°C"   min="0"   max="150"
+            threshold_hi="70"  threshold_lo="10"
+            hysteresis="5"     sample_interval_ms="1000"
+            adc_channel="1"    scale_factor="15000"
+            interface="ADC"    enabled="true"/>
+
+    <!-- Humidity sensors -->
+    <Sensor id="20" name="ServerRoomHumidity" type="HUMIDITY"
+            unit="%RH"  min="0"   max="100"
+            threshold_hi="80"  threshold_lo="20"
+            hysteresis="3"     sample_interval_ms="5000"
+            i2c_address="0x40" interface="I2C"
+            enabled="true"/>
+
+    <!-- Current sensors -->
+    <Sensor id="40" name="MainPhaseCurrent"   type="CURRENT"
+            unit="A"    min="0"   max="100"
+            threshold_hi="80"  threshold_lo="0"
+            hysteresis="2"     sample_interval_ms="500"
+            adc_channel="2"    scale_factor="10000"
+            interface="ADC"    enabled="true"/>
+
+    <!-- Voltage sensors -->
+    <Sensor id="50" name="SupplyVoltage"      type="VOLTAGE"
+            unit="V"    min="0"   max="260"
+            threshold_hi="250" threshold_lo="195"
+            hysteresis="5"     sample_interval_ms="1000"
+            adc_channel="3"    scale_factor="26000"
+            interface="ADC"    enabled="true"/>
+
+    <!-- Fire sensors -->
+    <Sensor id="60" name="FireDetector_Zone1" type="FIRE"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="500"
+            gpio_pin="5"       interface="GPIO"
+            enabled="true"/>
+
+    <Sensor id="61" name="FireDetector_Zone2" type="FIRE"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="500"
+            gpio_pin="6"       interface="GPIO"
+            enabled="true"/>
+
+    <!-- Smoke sensors -->
+    <Sensor id="70" name="SmokeDetector_MachineRoom" type="SMOKE"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="500"
+            gpio_pin="7"       interface="GPIO"
+            enabled="true"/>
+
+    <!-- Ultrasonic / distance -->
+    <Sensor id="80" name="WaterTankLevel"     type="ULTRASONIC"
+            unit="cm"   min="0"   max="200"
+            threshold_hi="180" threshold_lo="20"
+            hysteresis="5"     sample_interval_ms="2000"
+            adc_channel="4"    scale_factor="20000"
+            interface="ADC"    enabled="true"/>
+
+    <!-- Digital inputs -->
+    <Sensor id="90" name="DoorContact_MainEntry" type="DOOR"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="200"
+            gpio_pin="8"       interface="GPIO"
+            enabled="true"/>
+
+    <Sensor id="91" name="PIR_Zone1"          type="PIR_MOTION"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="200"
+            gpio_pin="9"       interface="GPIO"
+            enabled="true"/>
+
+    <Sensor id="92" name="EmergencyStop"      type="DIGITAL"
+            unit=""     min="0"   max="1"
+            hysteresis="0"     sample_interval_ms="100"
+            gpio_pin="10"      interface="GPIO"
+            enabled="true"/>
+
+  </Sensors>
+
+  <!-- ==================================================================
+       OUTPUTS
+       ID 1=Pump   ID 2=Alarm   ID 3=FireAlarm   ID 4=Hooter
+       ID 5=Buzzer ID 6=RedLED  ID 7=Fan         ID 8=SolenoidValve
+       ================================================================== -->
+  <Outputs>
+    <Output id="1"  name="MainPump"         type="PUMP"
+            priority="20"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="20"  active_high="true"/>
+
+    <Output id="2"  name="GeneralAlarm"     type="ALARM"
+            priority="80"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="21"  active_high="true"/>
+
+    <Output id="3"  name="FireAlarm"        type="FIRE_ALARM"
+            priority="100" default_state="OFF" failsafe_state="ON"
+            gpio_pin="22"  active_high="true"/>
+
+    <Output id="4"  name="Hooter"           type="HOOTER"
+            priority="100" default_state="OFF" failsafe_state="OFF"
+            gpio_pin="23"  active_high="true"/>
+
+    <Output id="5"  name="Buzzer"           type="BUZZER"
+            priority="90"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="24"  active_high="true"/>
+
+    <Output id="6"  name="RedWarningLED"    type="LED"
+            priority="60"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="25"  active_high="true"/>
+
+    <Output id="7"  name="CoolingFan"       type="FAN"
+            priority="30"  default_state="OFF" failsafe_state="ON"
+            gpio_pin="26"  active_high="true"/>
+
+    <Output id="8"  name="TankInletValve"   type="SOLENOID_VALVE"
+            priority="25"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="27"  active_high="true"/>
+
+    <Output id="9"  name="SecuritySiren"    type="SIREN"
+            priority="85"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="28"  active_high="true"/>
+
+    <Output id="10" name="MainContactor"    type="CONTACTOR"
+            priority="70"  default_state="OFF" failsafe_state="OFF"
+            gpio_pin="29"  active_high="true"/>
+  </Outputs>
+
+  <!-- ==================================================================
+       SCHEDULES (TOU)
+       ================================================================== -->
+  <Schedules>
+
+    <!-- Business hours: 08:00 to 18:00, Mon–Fri -->
+    <Schedule id="1" name="BusinessHours" type="WEEKLY" enabled="true">
+      <Slot start="08:00" end="18:00" weekday_mask="0111110"/>
+    </Schedule>
+
+    <!-- Night hours: 18:00 to 08:00 (overnight) all days -->
+    <Schedule id="2" name="NightHours" type="DAILY" enabled="true">
+      <Slot start="18:00" end="08:00"/>
+    </Schedule>
+
+    <!-- Pump allowed window: 08:00-18:00 weekdays, 09:00-13:00 weekend -->
+    <Schedule id="3" name="PumpAllowedWindow" type="WEEKLY" enabled="true">
+      <Slot start="08:00" end="18:00" weekday_mask="0111110"/>
+      <Slot start="09:00" end="13:00" weekday_mask="1000001"/>
+    </Schedule>
+
+    <!-- 24×7 — always active -->
+    <Schedule id="4" name="AlwaysOn" type="DAILY" enabled="true">
+      <Slot start="00:00" end="23:59"/>
+    </Schedule>
+
+  </Schedules>
+
+  <!-- ==================================================================
+       RULES
+       ================================================================== -->
+  <Rules>
+
+    <!-- R001: Temperature high alarm
+         IF BoilerTemp > 50°C THEN GeneralAlarm ON
+         Hysteresis: alarm stays ON until temp < 45°C (sensor hysteresis=5) -->
+    <Rule id="1" name="BoilerTempHighAlarm" priority="80"
+          logic="AND" on_delay_ms="0" off_delay_ms="0" enabled="true">
+      <Conditions>
+        <Condition sensor_id="1" op="GT" value="50"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="2" state="ON"/>
+        <Action output_id="6" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R002: Critical boiler temp → buzzer pulse
+         IF BoilerTemp > 70°C THEN Buzzer PULSE 5 sec -->
+    <Rule id="2" name="BoilerTempCritical" priority="90"
+          logic="AND" on_delay_ms="0" off_delay_ms="0" enabled="true">
+      <Conditions>
+        <Condition sensor_id="1" op="GT" value="70"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="5" state="PULSE" duration_ms="5000"/>
+      </Actions>
+    </Rule>
+
+    <!-- R003: Motor winding overheat
+         IF MotorWindingTemp > 70°C AND Current > 80A
+         THEN Fire Alarm + Hooter + Trip contactor
+         ON delay: 5 seconds (avoid nuisance trip) -->
+    <Rule id="3" name="MotorOverheat" priority="95"
+          logic="AND" on_delay_ms="5000" off_delay_ms="2000" enabled="true">
+      <Conditions>
+        <Condition sensor_id="3" op="GT" value="70"/>
+        <Condition sensor_id="40" op="GT" value="80"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="3" state="ON"/>
+        <Action output_id="4" state="ON"/>
+        <Action output_id="10" state="OFF"/>
+      </Actions>
+    </Rule>
+
+    <!-- R004: Fire sensor Zone 1 — immediate fire alarm
+         IF FireDetector_Zone1 = ON
+         THEN FireAlarm ON + Buzzer ON + Hooter ON + Siren ON -->
+    <Rule id="4" name="FireAlarmZone1" priority="100"
+          logic="AND" on_delay_ms="0" off_delay_ms="0" enabled="true">
+      <Conditions>
+        <Condition sensor_id="60" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="3" state="ON"/>
+        <Action output_id="5" state="ON"/>
+        <Action output_id="4" state="ON"/>
+        <Action output_id="9" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R005: Fire Zone 2 (same actions, different sensor) -->
+    <Rule id="5" name="FireAlarmZone2" priority="100"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="61" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="3" state="ON"/>
+        <Action output_id="5" state="ON"/>
+        <Action output_id="4" state="ON"/>
+        <Action output_id="9" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R006: Temperature AND Smoke — combined fire risk
+         IF Temp > 70 AND Smoke = ON
+         THEN Fire Alarm ON + Hooter ON -->
+    <Rule id="6" name="TempAndSmokeFireRisk" priority="100"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="1" op="GT" value="70"/>
+        <Condition sensor_id="70" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="3" state="ON"/>
+        <Action output_id="4" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R007: Low water tank — start pump (TOU gated: business hours only)
+         IF WaterTankLevel < 20cm THEN MainPump ON
+         Schedule: PumpAllowedWindow (#3) -->
+    <Rule id="7" name="WaterTankLow_StartPump" priority="20"
+          logic="AND" on_delay_ms="3000" off_delay_ms="10000"
+          schedule_id="3" enabled="true">
+      <Conditions>
+        <Condition sensor_id="80" op="LT" value="20"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="1" state="ON"/>
+        <Action output_id="8" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R008: Full tank — stop pump
+         IF WaterTankLevel > 180cm THEN MainPump OFF + Valve OFF -->
+    <Rule id="8" name="WaterTankFull_StopPump" priority="20"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="80" op="GT" value="180"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="1" state="OFF"/>
+        <Action output_id="8" state="OFF"/>
+      </Actions>
+    </Rule>
+
+    <!-- R009: Low humidity — alarm
+         IF ServerRoomHumidity < 20%RH THEN GeneralAlarm ON -->
+    <Rule id="9" name="LowHumidityAlarm" priority="60"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="20" op="LT" value="20"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="2" state="ON"/>
+        <Action output_id="6" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R010: High humidity — alarm
+         IF ServerRoomHumidity > 80%RH THEN GeneralAlarm ON + Fan ON -->
+    <Rule id="10" name="HighHumidityAlarm" priority="60"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="20" op="GT" value="80"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="2" state="ON"/>
+        <Action output_id="7" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R011: Temp in normal range — fan OFF
+         IF RoomTemp BETWEEN 18 and 28 THEN CoolingFan OFF -->
+    <Rule id="11" name="NormalTemp_FanOff" priority="30"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="2" op="BETWEEN" value_lo="18" value_hi="28"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="7" state="OFF"/>
+      </Actions>
+    </Rule>
+
+    <!-- R012: RoomTemp high — Fan ON
+         IF RoomTemp > 30 THEN CoolingFan ON -->
+    <Rule id="12" name="HighRoomTemp_FanOn" priority="30"
+          logic="AND" hysteresis="2" enabled="true">
+      <Conditions>
+        <Condition sensor_id="2" op="GT" value="30"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="7" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R013: Voltage under-voltage — alarm
+         IF SupplyVoltage < 195V THEN GeneralAlarm PULSE 2sec -->
+    <Rule id="13" name="UnderVoltageAlarm" priority="70"
+          logic="AND" on_delay_ms="2000" enabled="true">
+      <Conditions>
+        <Condition sensor_id="50" op="LT" value="195"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="2" state="PULSE" duration_ms="2000"/>
+        <Action output_id="6" state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R014: Voltage over-voltage — immediate trip
+         IF SupplyVoltage > 250V THEN MainContactor OFF + Hooter ON -->
+    <Rule id="14" name="OverVoltageTrip" priority="90"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="50" op="GT" value="250"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="10" state="OFF"/>
+        <Action output_id="4"  state="ON"/>
+        <Action output_id="3"  state="ON"/>
+      </Actions>
+    </Rule>
+
+    <!-- R015: Door open at night — security alarm
+         IF Door open AND time in NightHours
+         schedule_id=2 gates night-only enforcement -->
+    <Rule id="15" name="NightIntrusionAlarm" priority="85"
+          logic="AND" schedule_id="2" enabled="true">
+      <Conditions>
+        <Condition sensor_id="90" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="9" state="ON"/>
+        <Action output_id="5" state="PULSE" duration_ms="10000"/>
+      </Actions>
+    </Rule>
+
+    <!-- R016: PIR motion OR Door open (OR logic) → buzzer
+         IF PIR_Zone1 = ON OR Door = ON THEN Buzzer PULSE 3 sec -->
+    <Rule id="16" name="MotionOrDoorAlert" priority="70"
+          logic="OR" schedule_id="2" enabled="true">
+      <Conditions>
+        <Condition sensor_id="91" op="ON"/>
+        <Condition sensor_id="90" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="5" state="PULSE" duration_ms="3000"/>
+      </Actions>
+    </Rule>
+
+    <!-- R017: Emergency stop — all critical outputs OFF
+         IF EmergencyStop = ON THEN Pump OFF + Fan OFF + Contactor OFF -->
+    <Rule id="17" name="EmergencyStop" priority="255"
+          logic="AND" enabled="true">
+      <Conditions>
+        <Condition sensor_id="92" op="ON"/>
+      </Conditions>
+      <Actions>
+        <Action output_id="1"  state="OFF"/>
+        <Action output_id="7"  state="OFF"/>
+        <Action output_id="10" state="OFF"/>
+        <Action output_id="8"  state="OFF"/>
+        <Action output_id="4"  state="ON"/>
+      </Actions>
+    </Rule>
+
+  </Rules>
+
+</RuleEngineConfig>

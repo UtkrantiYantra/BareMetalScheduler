@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <!-- ===================================================================
+       Rule Engine Configuration Schema
+       Validates: sensors, outputs, rules, schedules, actions
+       =================================================================== -->
+
+  <!-- ---- Root ---- -->
+  <xs:element name="RuleEngineConfig">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="Sensors"   type="SensorsType"/>
+        <xs:element name="Outputs"   type="OutputsType"/>
+        <xs:element name="Schedules" type="SchedulesType" minOccurs="0"/>
+        <xs:element name="Rules"     type="RulesType"/>
+      </xs:all>
+      <xs:attribute name="version"     type="xs:string" use="required"/>
+      <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================================================================
+       SENSORS
+       ================================================================ -->
+  <xs:complexType name="SensorsType">
+    <xs:sequence>
+      <xs:element name="Sensor" type="SensorType" maxOccurs="99"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SensorType">
+    <xs:attribute name="id"               type="SensorIdType"   use="required"/>
+    <xs:attribute name="name"             type="xs:string"      use="required"/>
+    <xs:attribute name="type"             type="SensorTypeEnum" use="required"/>
+    <xs:attribute name="unit"             type="xs:string"/>
+    <xs:attribute name="min"              type="xs:decimal"     default="-999"/>
+    <xs:attribute name="max"              type="xs:decimal"     default="9999"/>
+    <xs:attribute name="threshold_hi"     type="xs:decimal"/>
+    <xs:attribute name="threshold_lo"     type="xs:decimal"/>
+    <xs:attribute name="hysteresis"       type="xs:decimal"     default="0"/>
+    <xs:attribute name="sample_interval_ms" type="xs:positiveInteger" default="1000"/>
+    <xs:attribute name="enabled"          type="xs:boolean"     default="true"/>
+    <!-- Platform-specific pin mapping -->
+    <xs:attribute name="adc_channel"      type="xs:nonNegativeInteger"/>
+    <xs:attribute name="gpio_pin"         type="xs:nonNegativeInteger"/>
+    <xs:attribute name="i2c_address"      type="xs:string"/>
+    <xs:attribute name="scale_factor"     type="xs:positiveInteger" default="100"/>
+    <xs:attribute name="interface"        type="InterfaceEnum" default="ADC"/>
+  </xs:complexType>
+
+  <xs:simpleType name="SensorIdType">
+    <xs:restriction base="xs:positiveInteger">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="99"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="SensorTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TEMPERATURE"/>
+      <xs:enumeration value="HUMIDITY"/>
+      <xs:enumeration value="CURRENT"/>
+      <xs:enumeration value="VOLTAGE"/>
+      <xs:enumeration value="FIRE"/>
+      <xs:enumeration value="SMOKE"/>
+      <xs:enumeration value="GAS"/>
+      <xs:enumeration value="ULTRASONIC"/>
+      <xs:enumeration value="WATER_LEVEL"/>
+      <xs:enumeration value="PRESSURE"/>
+      <xs:enumeration value="DOOR"/>
+      <xs:enumeration value="PIR_MOTION"/>
+      <xs:enumeration value="DIGITAL"/>
+      <xs:enumeration value="VIRTUAL"/>
+      <xs:enumeration value="RTC_TIME"/>
+      <xs:enumeration value="TOU_SCHEDULE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="InterfaceEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ADC"/>
+      <xs:enumeration value="GPIO"/>
+      <xs:enumeration value="I2C"/>
+      <xs:enumeration value="SPI"/>
+      <xs:enumeration value="VIRTUAL"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ================================================================
+       OUTPUTS
+       ================================================================ -->
+  <xs:complexType name="OutputsType">
+    <xs:sequence>
+      <xs:element name="Output" type="OutputType" maxOccurs="99"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="OutputType">
+    <xs:attribute name="id"            type="OutputIdType"   use="required"/>
+    <xs:attribute name="name"          type="xs:string"      use="required"/>
+    <xs:attribute name="type"          type="OutputTypeEnum" use="required"/>
+    <xs:attribute name="priority"      type="PriorityType"   default="50"/>
+    <xs:attribute name="default_state" type="OnOffType"      default="OFF"/>
+    <xs:attribute name="failsafe_state" type="OnOffType"     default="OFF"/>
+    <xs:attribute name="gpio_pin"      type="xs:nonNegativeInteger"/>
+    <xs:attribute name="gpio_port"     type="xs:string"/>
+    <xs:attribute name="active_high"   type="xs:boolean"     default="true"/>
+  </xs:complexType>
+
+  <xs:simpleType name="OutputIdType">
+    <xs:restriction base="xs:positiveInteger">
+      <xs:minInclusive value="1"/>
+      <xs:maxInclusive value="99"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="OutputTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RELAY"/>
+      <xs:enumeration value="LED"/>
+      <xs:enumeration value="ALARM"/>
+      <xs:enumeration value="FIRE_ALARM"/>
+      <xs:enumeration value="BUZZER"/>
+      <xs:enumeration value="HOOTER"/>
+      <xs:enumeration value="PUMP"/>
+      <xs:enumeration value="FAN"/>
+      <xs:enumeration value="SIREN"/>
+      <xs:enumeration value="SOLENOID_VALVE"/>
+      <xs:enumeration value="CONTACTOR"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PriorityType">
+    <xs:restriction base="xs:nonNegativeInteger">
+      <xs:maxInclusive value="255"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="OnOffType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ON"/>
+      <xs:enumeration value="OFF"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ================================================================
+       SCHEDULES (TOU)
+       ================================================================ -->
+  <xs:complexType name="SchedulesType">
+    <xs:sequence>
+      <xs:element name="Schedule" type="ScheduleType" maxOccurs="32"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ScheduleType">
+    <xs:sequence>
+      <xs:element name="Slot" type="SlotType" maxOccurs="8"/>
+    </xs:sequence>
+    <xs:attribute name="id"      type="xs:positiveInteger" use="required"/>
+    <xs:attribute name="name"    type="xs:string"          use="required"/>
+    <xs:attribute name="type"    type="ScheduleTypeEnum"   default="DAILY"/>
+    <xs:attribute name="enabled" type="xs:boolean"         default="true"/>
+  </xs:complexType>
+
+  <xs:complexType name="SlotType">
+    <xs:attribute name="start"        type="TimeType" use="required"/>
+    <xs:attribute name="end"          type="TimeType" use="required"/>
+    <xs:attribute name="weekday_mask" type="xs:string" default="1111111"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ScheduleTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="DAILY"/>
+      <xs:enumeration value="WEEKLY"/>
+      <xs:enumeration value="WEEKEND"/>
+      <xs:enumeration value="HOLIDAY"/>
+      <xs:enumeration value="SEASONAL"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TimeType">
+    <xs:restriction base="xs:string">
+      <!-- HH:MM format -->
+      <xs:pattern value="[0-2][0-9]:[0-5][0-9]"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ================================================================
+       RULES
+       ================================================================ -->
+  <xs:complexType name="RulesType">
+    <xs:sequence>
+      <xs:element name="Rule" type="RuleType" maxOccurs="1000"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RuleType">
+    <xs:sequence>
+      <xs:element name="Conditions" type="ConditionsType"/>
+      <xs:element name="Actions"    type="ActionsType"/>
+    </xs:sequence>
+    <xs:attribute name="id"           type="xs:positiveInteger" use="required"/>
+    <xs:attribute name="name"         type="xs:string"          use="required"/>
+    <xs:attribute name="enabled"      type="xs:boolean"         default="true"/>
+    <xs:attribute name="priority"     type="PriorityType"       default="50"/>
+    <xs:attribute name="logic"        type="LogicEnum"          default="AND"/>
+    <xs:attribute name="on_delay_ms"  type="xs:nonNegativeInteger" default="0"/>
+    <xs:attribute name="off_delay_ms" type="xs:nonNegativeInteger" default="0"/>
+    <xs:attribute name="schedule_id"  type="xs:nonNegativeInteger" default="0"/>
+  </xs:complexType>
+
+  <xs:complexType name="ConditionsType">
+    <xs:sequence>
+      <xs:element name="Condition" type="ConditionType" maxOccurs="8"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ConditionType">
+    <xs:attribute name="sensor_id" type="SensorIdType" use="required"/>
+    <xs:attribute name="op"        type="OperatorEnum" use="required"/>
+    <xs:attribute name="value"     type="xs:decimal"/>
+    <xs:attribute name="value_lo"  type="xs:decimal"/>
+    <xs:attribute name="value_hi"  type="xs:decimal"/>
+  </xs:complexType>
+
+  <xs:simpleType name="OperatorEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="EQ"/>
+      <xs:enumeration value="NE"/>
+      <xs:enumeration value="GT"/>
+      <xs:enumeration value="GTE"/>
+      <xs:enumeration value="LT"/>
+      <xs:enumeration value="LTE"/>
+      <xs:enumeration value="BETWEEN"/>
+      <xs:enumeration value="NOT_BETWEEN"/>
+      <xs:enumeration value="ON"/>
+      <xs:enumeration value="OFF"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="LogicEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="AND"/>
+      <xs:enumeration value="OR"/>
+      <xs:enumeration value="NOT"/>
+      <xs:enumeration value="XOR"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="ActionsType">
+    <xs:sequence>
+      <xs:element name="Action" type="ActionType" maxOccurs="8"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ActionType">
+    <xs:attribute name="output_id"   type="OutputIdType"    use="required"/>
+    <xs:attribute name="state"       type="ActionStateEnum" use="required"/>
+    <xs:attribute name="duration_ms" type="xs:nonNegativeInteger" default="0"/>
+  </xs:complexType>
+
+  <xs:simpleType name="ActionStateEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ON"/>
+      <xs:enumeration value="OFF"/>
+      <xs:enumeration value="TOGGLE"/>
+      <xs:enumeration value="PULSE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

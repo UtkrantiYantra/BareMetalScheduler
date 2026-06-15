@@ -1,0 +1,5 @@
+build/
+build_cmake/
+*.o
+*.tar.gz
+__pycache__/

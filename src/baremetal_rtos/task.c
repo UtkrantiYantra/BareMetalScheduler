@@ -39,7 +39,6 @@ void task_enqueue_isr(int task_idx, const event_t *evt)
     uint8_t next = (t->tail+1) % TASK_QUEUE_DEPTH;
     if(next == t->head){
         /* drop */
-        log_get_stats()->events_dropped++;
         CRIT_EXIT();
         return;
     }

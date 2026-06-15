@@ -8,6 +8,9 @@
 #define MAX_GLOBAL_EVENTS 128
 #endif
 
+extern void* task_payload_alloc(size_t size);
+extern log_stats_t* log_get_stats_mut(void);
+
 typedef struct {
     event_id_t id;
     uint32_t subs_mask; /* supports up to 32 tasks; extend if needed */
@@ -48,32 +51,30 @@ void event_publish(event_id_t id, void *payload, size_t size, uint32_t flags)
     subs = registry[id].subs_mask;
     CRIT_EXIT();
     if(subs == 0){
-        log_get_stats()->events_dropped++;
+        log_get_stats_mut()->events_dropped++;
         return;
     }
 
     /* For each subscriber, post event.
      * COPY semantics: allocate block per subscriber.
-     * ZERO_COPY: payload is transferred to first subscriber and must be documented.
+     * ZERO_COPY: payload is transferred to first subscriber only.
      */
+    int zero_copy_sent = 0;
     for(uint8_t t=0; t<32; ++t){
         if(subs & (1u<<t)){
             if(flags & EVT_FLAG_ZERO_COPY){
-                /* transfer ownership to the first subscriber only - others will get NULL payload
-                   (application-level policy). Here we post payload to all but mark that only
-                   the first receives pointer. */
-                static int sent_once = 0;
                 void *pl = NULL;
-                if(!sent_once){ pl = payload; sent_once = 1; }
-                task_enqueue_isr(t, &(event_t){ .id = id, .payload = pl, .size = size });
+                if(!zero_copy_sent){ pl = payload; zero_copy_sent = 1; }
+                event_t e = { .id = id, .payload = pl, .size = size };
+                task_enqueue_isr(t, &e);
             } else {
                 /* copy mode */
                 void *blk = task_payload_alloc(size);
                 if(blk && payload && size) memcpy(blk, payload, size);
-                task_enqueue_isr(t, &(event_t){ .id = id, .payload = blk, .size = size });
+                event_t e = { .id = id, .payload = blk, .size = size };
+                task_enqueue_isr(t, &e);
             }
-            log_get_stats()->events_published++;
+            log_get_stats_mut()->events_published++;
         }
     }
-    /* If COPY mode, nothing else. If ZERO_COPY, caller must not free payload - ownership moved */
 }

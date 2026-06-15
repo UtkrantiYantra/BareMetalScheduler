@@ -1,6 +1,7 @@
 #include "mempool.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 /* Simple wrapper implementation for task_payload_alloc and free.
    For embedded determinism you should create static pools and register them. */
@@ -12,6 +13,7 @@ void init_default_payload_pool(void *buf, size_t blk_size, size_t count){
 }
 
 void* task_payload_alloc(size_t size){
+    (void)size;
     if(!global_pool) return NULL;
     return mempool_alloc(global_pool);
 }

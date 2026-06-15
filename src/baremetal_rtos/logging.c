@@ -22,6 +22,9 @@ void log_printf(const char *fmt, ...)
 
 const log_stats_t* log_get_stats(void) { return &stats; }
 
+/* internal mutable accessor for framework use */
+log_stats_t* log_get_stats_mut(void) { return &stats; }
+
 /* Simple profiling hooks using host clock via clock() */
 #include <time.h>
 typedef struct {
